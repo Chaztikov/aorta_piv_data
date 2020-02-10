@@ -1,3 +1,31 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri May 10 01:15:02 2019
+
+@author: chaztikov
+"""
+
+import os,sys,re
+import numpy as np
+import pandas as pd
+import subprocess
+import pandas as pd
+import numpy as np
+import scipy
+import scipy.integrate
+from scipy.spatial import KDTree
+from scipy.interpolate import BSpline
+from scipy.interpolate import splrep, splder, sproot, make_interp_spline
+import scipy.sparse.linalg as spla
+import matplotlib.pyplot as plt
+
+# import seaborn as sns
+import sklearn.decomposition
+from sklearn.decomposition import PCA
+
+
+
 
     dimreductiontype='pca'
     

@@ -6,12 +6,9 @@ Created on Fri May 10 01:15:02 2019
 @author: chaztikov
 """
 
-import os
+import os,sys,re
 import numpy as np
 import pandas as pd
-import os
-import sys
-import re
 import subprocess
 import pandas as pd
 import numpy as np
@@ -22,9 +19,8 @@ from scipy.interpolate import BSpline
 from scipy.interpolate import splrep, splder, sproot, make_interp_spline
 import scipy.sparse.linalg as spla
 import matplotlib.pyplot as plt
-# import seaborn as sns
-import sklearn.decomposition
-from sklearn.decomposition import PCA
+
+
 
 cwd = os.getcwd()
 dname = '/home/chaztikov/git/aorta_piv_data/data/original/'
@@ -32,10 +28,16 @@ fnames = os.listdir(dname)
 fnames0 = 'OpenAreaPerimountWaterbpm'
 fnames = [fnames0+str(i)+'.txt' for i in [60, 80, 100, 120]]
 
+# bpm,iframe,ifframe=np.loadtxt('bpmdata.txt',unpack=True)
+bpmdatas=np.loadtxt(dname+'bpmdata.txt',unpack=False)
+bpmdatas=np.array(bpmdatas,dtype=int)
+
 # for ifname0,fname0 in enumerate(fnames[:-2]):
 for ifname0, fname0 in enumerate(fnames):
 
     dname0 = fname0[:-4]
+    print(fname0)
+    bpmdata = bpmdatas[ifname0]
 
     try:
         os.makedirs(dname0)
@@ -57,9 +59,13 @@ for ifname0, fname0 in enumerate(fnames):
 
     HR = 1
     npeaks = 13
+    
     phi0 = 14150-1
-#    phi0 = 0
     phi0 = int(phi0)
+    
+    bpm = bpmdata[0]
+    phi0 = bpmdata[1]
+    
     ntau = int(5)
     #ntau = 10
     ntau = int(ntau)
