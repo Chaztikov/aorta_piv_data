@@ -1,40 +1,23 @@
 
-import os
-import sys
-import re
-import numpy as np
-import pandas as pd
-import subprocess
-import pandas as pd
-
 import numpy as np
 import numpy.fft as fft
 from numpy.fft import fftfreq
 
+import pandas as pd
+import os,sys,re
+import subprocess
 
 import scipy
 import scipy.integrate
-
-
+from scipy.spatial import KDTree
+from scipy.interpolate import BSpline
+from scipy.interpolate import splrep, splder, sproot, make_interp_spline
+import scipy.sparse.linalg as spla
 from scipy.spatial import KDTree
 from scipy.interpolate import BSpline
 from scipy.interpolate import splrep, splder, sproot, make_interp_spline
 import scipy.sparse.linalg as spla
 import matplotlib.pyplot as plt
-import os
-import sys
-import re
-import numpy as np
-import pandas as pd
-import subprocess
-import pandas as pd
-import numpy as np
-import scipy
-import scipy.integrate
-from scipy.spatial import KDTree
-from scipy.interpolate import BSpline
-from scipy.interpolate import splrep, splder, sproot, make_interp_spline
-import scipy.sparse.linalg as spla
 import matplotlib.pyplot as plt
 
 # import seaborn as sns
@@ -56,10 +39,18 @@ bpmdatas = np.loadtxt(dname+'bpmdata.txt', unpack=False)
 bpmdatas = np.array(bpmdatas, dtype=int)
 print(bpmdatas)
 
+
 initframe=[12000,0,20000,21000]
 nmaxima=[13,17,19,23]
+
+initframe=[21000,21000,20000,22800]
+nmaxima=[13,17,19,14]
+bpms=[60,80,100,120]
 splorder=1
-dnx=40
+
+
+
+dnx=11
    
 for idx, fname0 in enumerate(fnames[:]):
 
@@ -72,9 +63,29 @@ for idx, fname0 in enumerate(fnames[:]):
 
     dx = np.diff(x)
 
-    # plt.figure(figsize=(24,12))
-    # plt.plot(y[ii0:])
-    # plt.show()
+    plt.figure(figsize=(24, 12))
+    plt.plot(y[ii0:])
+    plt.title(fname0)
+    plt.grid()
+    plt.xlabel('Time')
+    plt.ylabel('Area')
+    plt.savefig('rawsamples_'+fname0[-6:-4]+'.png')
+    plt.show()
+
+for idx, fname0 in enumerate(fnames[:]):
+
+    data = np.loadtxt(dname+fname0)[:, :]
+
+    x,y = data[:,0],data[:,1]
+
+    ii0=initframe[idx]
+    npeaks = nmaxima[idx]
+
+    dx = np.diff(x)
+
+    plt.figure(figsize=(24,12))
+    plt.plot(y[ii0:])
+    plt.show()
 
     y = y[ii0:]
     nx=y.shape[0]
@@ -88,7 +99,7 @@ for idx, fname0 in enumerate(fnames[:]):
     # y /=ymax
     # x-=x[0]
     
-    # inz=y.nonzero()
+    # inz=y.nonzero()[0]
     # x=x[inz]
     # y=y[inz]
     # y /=y.max()
@@ -106,15 +117,15 @@ for idx, fname0 in enumerate(fnames[:]):
     # nx3 = int(nx*icycle / np.gcd(nx, icycle))
     # print(nx2,nx3)
     # nx2= nx3
-
+    x[0]
     xx=np.linspace(x[0],dx2*nx2, nx2, endpoint=True)
     print('xx\n',xx)
     yy=interp(xx)
     print('yy\n',yy)
-    inz2=yy.nonzero()[0]
-    print(inz2)
-    xx=xx[inz2]
-    yy=yy[inz2]
+    # inz2=yy.nonzero()[0]
+    # print(inz2)
+    # xx=xx[inz2]
+    # yy=yy[inz2]
     # yy /=yy.max()
     # xx-=xx[0]
     
@@ -136,7 +147,6 @@ for idx, fname0 in enumerate(fnames[:]):
     # ny=(yy.shape[0]-icycle)//icycle
     
     # icycle=icycle
-    ny
     # uu=[
     #     np.mod(xx[(i)*icycle:(i+1)*icycle], 
     #            xx[icycle])
@@ -158,17 +168,21 @@ for idx, fname0 in enumerate(fnames[:]):
     uu=[xx[i0:icycle+i1] for i in range(ny)]
     umat=np.vstack(uu)[:]
     # vv=[yy[i0 + (i)*icycle:(i+1)*icycle+i1][:] for i in range(ny)]
-    vv=[yy[i0 + (i)*icycle:(i+1)*icycle+i1][:] for i in  range(ny)]
+    vv=[yy[i*icycle:(i+1)*icycle][:] for i in  range(ny)]
     vmat=np.vstack(vv)[:]
+    vv
+    vmat
+    
     plt.figure(figsize=(24,12))
-    # plt.plot(vmat.T)
-    # if(dicycle>0):
-    #     ii=dicycle//2;
-    #     plt.plot(umat[:,ii:-ii].T,vmat[:,ii:-ii].T,'.');
-    # else:
-    #     # ii=1;
-    # plt.plot(umat[:,:].T,vmat[:,:].T,'.');
-    plt.plot(vmat[:,:].T,'.');
+    # plt.plot(vmat[:,:].T,'.');
+    
+    vlist=[row[row>0][:] for row in vmat]
+    minlens=(np.sort([len(row) for row in vlist])[:])
+    minlens
+    minlen=np.min(minlens[-3:])
+    minlen
+    vlist2=np.vstack([row[:minlen] for row in vlist if len(row)>minlen])
+    plt.plot(vlist2[:,:].T,'.');
     plt.title(fname0)
     plt.grid()
     plt.xlabel('Time')
