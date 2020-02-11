@@ -51,26 +51,26 @@ splorder=1
 
 
 dnx=11
-   
-for idx, fname0 in enumerate(fnames[:]):
 
-    data = np.loadtxt(dname+fname0)[:, :]
+# for idx, fname0 in enumerate(fnames[:]):
 
-    x,y = data[:,0],data[:,1]
+#     data = np.loadtxt(dname+fname0)[:, :]
 
-    ii0=initframe[idx]
-    npeaks = nmaxima[idx]
+#     x,y = data[:,0],data[:,1]
 
-    dx = np.diff(x)
+#     ii0=initframe[idx]
+#     npeaks = nmaxima[idx]
 
-    plt.figure(figsize=(24, 12))
-    plt.plot(y[ii0:])
-    plt.title(fname0)
-    plt.grid()
-    plt.xlabel('Time')
-    plt.ylabel('Area')
-    plt.savefig('rawsamples_'+fname0[-6:-4]+'.png')
-    plt.show()
+#     dx = np.diff(x)
+
+#     plt.figure(figsize=(24, 12))
+#     plt.plot(y[ii0:])
+#     plt.title(fname0)
+#     plt.grid()
+#     plt.xlabel('Time')
+#     plt.ylabel('Area')
+#     plt.savefig('rawsamples_'+fname0[-6:-4]+'.png')
+#     plt.show()
 
 for idx, fname0 in enumerate(fnames[:]):
     if(idx==3):
@@ -83,16 +83,16 @@ for idx, fname0 in enumerate(fnames[:]):
 
         dx = np.diff(x)
 
-        plt.figure(figsize=(24,12))
-        plt.plot(y[ii0:])
-        plt.show()
+        # plt.figure(figsize=(24,12))
+        # plt.plot(y[ii0:])
+        # plt.show()
 
-        y = y[ii0:]
-        nx=y.shape[0]
+        # y = y[ii0:]
+        # nx=y.shape[0]
 
         # x = x[ii0:]
         dx=dx[:nx]
-        x = np.cumsum(dx)
+        # x = np.cumsum(dx)
         print(nx,x.shape)
         # x0=x[0]
         # ymax=y.max()
@@ -108,7 +108,8 @@ for idx, fname0 in enumerate(fnames[:]):
         # plt.plot(xx,yy);plt.show()
         interp=BSpline(x,y,splorder)
         nx=x.shape[0]
-        icycle = y.shape[0]//npeaks 
+        icycle = y.shape[0]//npeaks
+        icycle 
         icyclef = y.shape[0]/npeaks 
         print(icycle,'\n',icyclef)
         nx2 = nx*dnx
@@ -172,17 +173,18 @@ for idx, fname0 in enumerate(fnames[:]):
         vmat=np.vstack(vv)[:]
         vv
         vmat
+        ii,jj = np.nonzero(vmat)
         idiff = np.where(0<ii[1:]-ii[:-1])[0]
         
-        ii0=0;
+        # ii0=0;
+        # plt.figure(figsize=(24,12))
+        # for iidx,iid in enumerate(idiff[:]):
+        #     plt.plot(yy[np.nonzero(yy)][ii0:ii0+iid],'.');
+        #     ii0=iid
+        # plt.show()
         plt.figure(figsize=(24,12))
-        for iidx,iid in enumerate(idiff):
-            plt.plot(yy[ii0:ii0+iid],'.');
-            ii0+=iid
-        plt.show()
-        plt.figure(figsize=(24,12))
-        # plt.plot(vmat[np.nonzero(vmat)].T,'.');
-        plt.plot(vmat[:,jj].T,'k.',alpha=0.2,ms=1,);plt.show()
+        plt.plot(vmat[np.nonzero(vmat)].T,'.');
+        # plt.plot(vmat[:,jj].T,'k.',alpha=0.2,ms=1,);plt.show()
         plt.show()
         vlist=[row[row>0][:] for row in vmat]
         minlens=(np.sort([len(row) for row in vlist])[:])
