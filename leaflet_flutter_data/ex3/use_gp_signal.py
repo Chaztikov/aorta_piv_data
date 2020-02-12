@@ -1,12 +1,18 @@
 
 
+import sklearn.model_selection
+import sklearn
+import tensorflow_probability as tfp
+import tensorflow.compat.v2 as tf
 from mpl_toolkits.mplot3d import Axes3D
-import time,sys,os
+import time
+import sys
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 # 0 = all messages are logged (default behavior)
 # 1 = INFO messages are not printed
 # 2 = INFO and WARNING messages are not printed
@@ -14,11 +20,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 # import tensorflow as tf
-import tensorflow.compat.v2 as tf
-import tensorflow_probability as tfp
-
-import sklearn
-import sklearn.model_selection
 
 
 tfb = tfp.bijectors
@@ -29,7 +30,6 @@ tf.enable_v2_behavior()
 os.system('rm *.txt')
 os.system('rm ./save/*.txt')
 os.system('rm ./png/*.png')
-
 
 
 # Configure plot defaults
@@ -73,11 +73,11 @@ FramesPerPulse = 60/BPM*FPS
 # Time =(1:FPS)/FPS*1000;
 # Pulses = floor((size(Area,1)-InitialFrame)/FramesPerPulse);
 
-filenames = ['aortic_valve_piv_data.csv','pericar_valve_piv_data.csv']
+filenames = ['aortic_valve_piv_data.csv', 'pericar_valve_piv_data.csv']
 times = np.arange(0, 0.855, 0.000334)
 
 paramslist = []
-header = ['amplitude','length_scale','observation_noise_variance']
+header = ['amplitude', 'length_scale', 'observation_noise_variance']
 
 
 dname = '/home/chaztikov/git/aorta_piv_data/data/original/'
@@ -86,34 +86,34 @@ fnames0 = 'OpenAreaPerimountWaterbpm'
 fnames = [fnames0+str(i)+'.txt' for i in [60, 80, 100, 120]]
 
 bpmdatas = np.array(
-    np.loadtxt(dname+'bpmdata.txt', unpack=False)
-    , dtype=int)
+    np.loadtxt(dname+'bpmdata.txt', unpack=False), dtype=int)
 
-ntrain=100
-nvalid=100
+ntrain = 100
+nvalid = 100
 for fname0 in fnames[:1]:
-    print(fname0,'\n\n')
+    print(fname0, '\n\n')
 
+    data = np.loadtxt(dname+fname0)[:, :]
 
-    data = np.loadtxt(dname+fname0)[ : , : ]
+    train, test = sklearn.model_selection.train_test_split(data, test_size=int(
+        data.shape[0]*.90))  # , np.arange(iif,2), np.arange(iif,2))
+    valid, test = sklearn.model_selection.train_test_split(test, test_size=int(
+        test.shape[0]*.50))  # , np.arange(iif,2), np.arange(iif,2))
 
-    train, test = sklearn.model_selection.train_test_split( data, test_size=int(data.shape[0]*.90) )#, np.arange(iif,2), np.arange(iif,2))
-    valid, test = sklearn.model_selection.train_test_split( test, test_size=int(test.shape[0]*.50) )#, np.arange(iif,2), np.arange(iif,2))
+    x, y = data[:ntrain, 0], data[:ntrain, 1]
 
-    x,y = data[:ntrain,0], data[:ntrain,1]
-    
     # x,y = train[:,0], train[:,1]
     # x,y = valid[:,0], valid[:,1]
     # x,y = test[:,0], test[:,1]
-        
+
     inz = np.nonzero(y)[0]
-    x=x[inz]
-    y=y[inz]
+    x = x[inz]
+    y = y[inz]
 
     x = np.atleast_2d(x).T
 
-    observation_index_points_ = x #times
-    observations_ = y #df[val].values
+    observation_index_points_ = x  # times
+    observations_ = y  # df[val].values
 
     checkpoints_iterator_ = tf.train.checkpoints_iterator('.')
 
@@ -129,27 +129,34 @@ for fname0 in fnames[:1]:
 
     #     return model
 
-    
-    params = np.array([414.4366916986194, 0.03000000000000001, 0.36970283292423645] ,dtype=np.float64)
+    params = np.array([414.4366916986194, 0.03000000000000001,
+                       0.36970283292423645], dtype=np.float64)
 
     '''
     USE MODEL
     '''
 
+    test.shape
+    train.shape
+    valid.shape
+
+    data[:, 1].min()
+
     x.shape
     x.min()
     x.max()
-    nvalid=max(x.shape)
-    num_predictive_samples=1
-    # predictive_index_points_ = np.linspace(valid[0,0], valid[-1,0], nvalid ) 
+    nvalid = max(x.shape)
+    num_predictive_samples = 1
+    # predictive_index_points_ = np.linspace(valid[0,0], valid[-1,0], nvalid )
     predictive_index_points_ = np.linspace(x.min(), x.max(), nvalid)
     # Reshape to [200, 1] -- 1 is the dimensionality of the feature space.
     predictive_index_points_ = predictive_index_points_[..., np.newaxis]
 
-    amplitude_var, length_scale_var = params[[0,1]]
+    amplitude_var, length_scale_var = params[[0, 1]]
     observation_noise_variance_var = params[2]
-    optimized_kernel = tfk.ExponentiatedQuadratic(amplitude_var, length_scale_var)
-    
+    optimized_kernel = tfk.ExponentiatedQuadratic(
+        amplitude_var, length_scale_var)
+
     gprm = tfd.GaussianProcessRegressionModel(
         kernel=optimized_kernel,
         index_points=predictive_index_points_,
@@ -172,10 +179,10 @@ for fname0 in fnames[:1]:
                 marker='.',
                 label='Observations')
     for i in range(num_predictive_samples):
-        plt.plot(predictive_index_points_[:,0],
-                samples[i,:],
-                c='r', alpha=.9, ms=10,
-                label='Posterior Sample' if i == 0 else None)
+        plt.plot(predictive_index_points_[:, 0],
+                 samples[i, :],
+                 c='r', alpha=.9, ms=10,
+                 label='Posterior Sample' if i == 0 else None)
     leg = plt.legend(loc='upper right')
     for lh in leg.legendHandles:
         lh.set_alpha(1)
