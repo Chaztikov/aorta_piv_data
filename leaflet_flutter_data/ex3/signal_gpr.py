@@ -75,14 +75,19 @@
 #         data[np.isnan(data)]=0;
 
 
-
+import sklearn.model_selection
+import sklearn
+import tensorflow_probability as tfp
+import tensorflow.compat.v2 as tf
 from mpl_toolkits.mplot3d import Axes3D
-import time,sys,os
+import time
+import sys
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 # 0 = all messages are logged (default behavior)
 # 1 = INFO messages are not printed
 # 2 = INFO and WARNING messages are not printed
@@ -90,11 +95,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 # import tensorflow as tf
-import tensorflow.compat.v2 as tf
-import tensorflow_probability as tfp
-
-import sklearn
-import sklearn.model_selection
 
 
 tfb = tfp.bijectors
@@ -105,7 +105,6 @@ tf.enable_v2_behavior()
 os.system('rm *.txt')
 os.system('rm ./save/*.txt')
 os.system('rm ./png/*.png')
-
 
 
 # Configure plot defaults
@@ -130,7 +129,14 @@ ii0, dii, iif = 0, 10, 2650
 
 dii = 2
 
-num_optimizer_iters = 10000
+
+pct_valid = .20
+pct_train = .20
+pct_test = 1 - pct_valid - pct_train
+
+learning_rate=.01
+
+num_optimizer_iters = 1000
 
 num_predictive_samples = 10
 
@@ -149,11 +155,12 @@ FramesPerPulse = 60/BPM*FPS
 # Time =(1:FPS)/FPS*1000;
 # Pulses = floor((size(Area,1)-InitialFrame)/FramesPerPulse);
 
-filenames = ['aortic_valve_piv_data.csv','pericar_valve_piv_data.csv']
+filenames = ['aortic_valve_piv_data.csv', 'pericar_valve_piv_data.csv']
 times = np.arange(0, 0.855, 0.000334)
 
+loglikelihoods = []
 paramslist = []
-header = ['amplitude','length_scale','observation_noise_variance']
+header = ['amplitude', 'length_scale', 'observation_noise_variance']
 
 
 dname = '/home/chaztikov/git/aorta_piv_data/data/original/'
@@ -162,32 +169,33 @@ fnames0 = 'OpenAreaPerimountWaterbpm'
 fnames = [fnames0+str(i)+'.txt' for i in [60, 80, 100, 120]]
 
 bpmdatas = np.array(
-    np.loadtxt(dname+'bpmdata.txt', unpack=False)
-    , dtype=int)
+    np.loadtxt(dname+'bpmdata.txt', unpack=False), dtype=int)
+
+
 
 for fname0 in fnames[:1]:
-    print(fname0,'\n\n')
-    data = np.loadtxt(dname+fname0)[ :, :]
-
-    train, test = sklearn.model_selection.train_test_split( data, test_size=int(data.shape[0]*.70) )#, np.arange(iif,2), np.arange(iif,2))
-    valid, test = sklearn.model_selection.train_test_split( test, test_size=int(test.shape[0]*.50) )#, np.arange(iif,2), np.arange(iif,2))
-
+    print(fname0, '\n\n')
+    data = np.loadtxt(dname+fname0)[:, :]
+    nsamples = data.shape[0]
     
-    x,y = train[:,0],train[:,1]
-        
+    train, test = sklearn.model_selection.train_test_split(data, test_size=int(nsamples * (pct_test + pct_valid) ), shuffle=0 )  # , np.arange(iif,2), np.arange(iif,2))
+    valid, test = sklearn.model_selection.train_test_split(test, test_size=int(nsamples * pct_test ), shuffle=0 )  # , np.arange(iif,2), np.arange(iif,2))
+
+    x, y = train[:, 0], train[:, 1]
+
     inz = np.nonzero(y)[0]
-    x=x[inz]
-    y=y[inz]
+    x = x[inz]
+    y = y[inz]
 
     x = np.atleast_2d(x)
 
-    observation_index_points_ = x #times
-    observations_ = y #df[val].values
+    observation_index_points_ = x  # times
+    observations_ = y  # df[val].values
 
     # observation_index_points_ = np.array(observation_index_points_, np.float64)
     # observation_index_points_ = observation_index_points_[::dii]
     # observations_ = observations_[::dii]
-    
+
     checkpoints_iterator_ = tf.train.checkpoints_iterator('.')
 
     def build_gp(amplitude, length_scale, observation_noise_variance):
@@ -198,7 +206,7 @@ for fname0 in fnames[:1]:
             kernel=kernel,
             index_points=observation_index_points_,
             observation_noise_variance=observation_noise_variance)
-            # mean_fn=mean_fn,
+        # mean_fn=mean_fn,
 
         return model
 
@@ -214,37 +222,35 @@ for fname0 in fnames[:1]:
 
     print("sampled {}".format(sample))
     print("log_prob of sample: {}".format(lp))
-    
-    
 
     constrain_positive = tfb.Shift(np.finfo(np.float64).tiny)(tfb.Exp())
 
-    length_scale0 = np.abs(np.diff(x)).min() #0.01,
+    length_scale0 = np.abs(np.diff(x)).min()  # 0.01,
     amplitude0 = y.max()-y.min()
     observation_noise_variance0 = np.std(y)/np.mean(y)
     # np.std(y)
     # params
 
     amplitude_var = tfp.util.TransformedVariable(
-        initial_value = amplitude0,
+        initial_value=amplitude0,
         bijector=constrain_positive,
         name='amplitude',
         dtype=np.float64)
 
     length_scale_var = tfp.util.TransformedVariable(
-        initial_value = length_scale0, 
+        initial_value=length_scale0,
         bijector=constrain_positive,
         name='length_scale',
         dtype=np.float64)
 
     observation_noise_variance_var = tfp.util.TransformedVariable(
-        initial_value = observation_noise_variance0,
+        initial_value=observation_noise_variance0,
         bijector=constrain_positive,
         name='observation_noise_variance',
         dtype=np.float64)
 
     trainable_variables = [v.trainable_variables[0] for v in
-                        [amplitude_var,
+                           [amplitude_var,
                             length_scale_var,
                             observation_noise_variance_var]]
 
@@ -257,13 +263,13 @@ for fname0 in fnames[:1]:
             'observation_noise_variance': observation_noise_variance,
             'observations': observations_
         })
-    
+
     # Now we optimize the model parameters.
-    optimizer = tf.optimizers.Adam(learning_rate=.01)
+    optimizer = tf.optimizers.Adam(learning_rate)
 
     # Store the likelihood values during training, so we can plot the progress
     # lls_ = np.zeros(num_optimizer_iters, np.float64)
-    lls_=[]
+    lls_ = []
     for i in range(num_optimizer_iters):
         with tf.GradientTape() as tape:
             loss = -target_log_prob(amplitude_var,
@@ -271,7 +277,7 @@ for fname0 in fnames[:1]:
                                     observation_noise_variance_var)
         grads = tape.gradient(loss, trainable_variables)
         optimizer.apply_gradients(zip(grads, trainable_variables))
-        lls_.append(loss)
+        lls_.append( loss.numpy() )
         # lls_[i] = loss
 
     # # checkpoints_iterator_;
@@ -290,16 +296,11 @@ for fname0 in fnames[:1]:
     params = write_trained_parameters()
     paramslist.append(params)
     print(params, '\n')
-
-
-
-    loglikelihood = np.array(lls_)
-    np.savetxt(filename[:7]+'_loglikelihood.txt', loglikelihood)
     
-    np.savetxt('paramslists.txt', paramslist)
+    loglikelihood = np.vstack(lls_)
+    
+    np.savetxt(fname0[:]+'_loglikelihood.txt', loglikelihoods)
+
+    np.savetxt( fname0[:]+ '_paramslists.txt', paramslist)
 
 
-
-
-        
-np.savetxt('paramslists.txt', paramslist)

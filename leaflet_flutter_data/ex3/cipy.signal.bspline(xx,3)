@@ -1,0 +1,8 @@
+Help on function bspline in module scipy.signal.bsplines:
+
+bbsspplliinnee(x, n)
+    B-spline basis function of order n.
+    
+    Notes
+    -----
+    Uses numpy.piecewise and automatic function-generator.

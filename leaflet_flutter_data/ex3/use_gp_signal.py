@@ -56,7 +56,7 @@ dii = 2
 
 num_optimizer_iters = 10000
 
-num_predictive_samples = 1
+num_predictive_samples = 10
 
 NUM_TRAINING_POINTS = 0
 
@@ -67,6 +67,8 @@ NFFT = 512*4
 FPS = 5000
 PixelsPerCm = 100
 
+ntrain = 10000//2
+nvalid = 10000
 
 FramesPerPulse = 60/BPM*FPS
 # Area = A{1,2}/(PixelsPerCm^2);
@@ -88,8 +90,6 @@ fnames = [fnames0+str(i)+'.txt' for i in [60, 80, 100, 120]]
 bpmdatas = np.array(
     np.loadtxt(dname+'bpmdata.txt', unpack=False), dtype=int)
 
-ntrain = 100
-nvalid = 100
 for fname0 in fnames[:1]:
     print(fname0, '\n\n')
 
@@ -100,6 +100,7 @@ for fname0 in fnames[:1]:
     valid, test = sklearn.model_selection.train_test_split(test, test_size=int(
         test.shape[0]*.50))  # , np.arange(iif,2), np.arange(iif,2))
 
+    # x, y = data[:, 0], data[:, 1]
     x, y = data[:ntrain, 0], data[:ntrain, 1]
 
     # x,y = train[:,0], train[:,1]
@@ -146,7 +147,7 @@ for fname0 in fnames[:1]:
     x.min()
     x.max()
     nvalid = max(x.shape)
-    num_predictive_samples = 1
+    # num_predictive_samples = 1
     # predictive_index_points_ = np.linspace(valid[0,0], valid[-1,0], nvalid )
     predictive_index_points_ = np.linspace(x.min(), x.max(), nvalid)
     # Reshape to [200, 1] -- 1 is the dimensionality of the feature space.
@@ -173,15 +174,12 @@ for fname0 in fnames[:1]:
 
     # Plot the true function, observations, and posterior samples.
     plt.figure(figsize=(24, 12))
-    plt.scatter(observation_index_points_[:, 0],
-                observations_,
-                c='b',
-                marker='.',
+    plt.plot(observation_index_points_[:, 0],
+                observations_,'b-.',
                 label='Observations')
     for i in range(num_predictive_samples):
         plt.plot(predictive_index_points_[:, 0],
-                 samples[i, :],
-                 c='r', alpha=.9, ms=10,
+                 samples[i, :],'ro', alpha=.9, ms=2,
                  label='Posterior Sample' if i == 0 else None)
     leg = plt.legend(loc='upper right')
     for lh in leg.legendHandles:
